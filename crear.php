@@ -171,43 +171,61 @@
             $array = $pdostmt->fetchAll(PDO::FETCH_ASSOC);
           
             return $array;
-        }
-        function createBook(string $name): bool
+        } 
+        function createBook($title, $isbn, $pdate, $publisher,$author_ids): bool 
         {
             $exito = false;
-
+            $conProyecto = getConnection();
             try {
-                $conProyecto = getConnection();
+               
                 $conProyecto->beginTransaction();
 
-                $insertar = "INSERT INTO books(book_id, title, isbn, published_date, publisher_id) VALUES(:book_id, :title, :isbn, :published_date, :publisher_id)";
-                $insertar->bindParam("book_id", $book_id, "title", "isbn", "published_date", "publisher_id");
-                $insertarAutores = "INSERT INTO book_authors(book_id, author_id) VALUES(:book_id, :author_id)";
+                $ingresar = "INSERT INTO books( title, isbn, pdate, publisher) VALUES( :title, :isbn, :pdate, :publisher)";
 
-                $stmt = $conProyecto->prepare($insertar);
-                $stmt_del_book_authors = $conProyecto->prepare($insertarAutores);
+                $stmt = $conProyecto->prepare($ingresar);
 
-                $exito = $stmt_del_book_authors->execute();
+               
+                $stmt->bindParam(':title', $title, PDO::PARAM_STR);
+                $stmt->bindParam(':isbn', $isbn, PDO::PARAM_STR);
+                $stmt->bindParam(':pdate', $pdate, PDO::PARAM_STR);
+                $stmt->bindParam(':publisher', $publisher, PDO::PARAM_STR);
 
-            }
-            // $pdostmt = $conn->prepare("INSERT INTO books VALUES ( :name) ");
-            // $pdostmt->bindValue("name", $name);
-        
-            // $pdostmt->execute();
-        
-            // //Recuperamos el id de la última inserción
-            // $publisher_Id = $conn->lastInsertId();
-            // //Devolvemeos id o false si hubo error
-            // return ($publisher_Id !== false) ? $publisher_Id : null;
-        }   
+                $exito=$stmt->execute();
 
-      
+                $book_id=$conProyecto->lastInsertId();
 
+                if ($exito) {
+
+
+                    $ingresarAutores = "INSERT INTO book_authors(book_id, author_ids) VALUES(:book_id, :author_ids)";
+
+                    $stmt_autores = $conProyecto->prepare($ingresarAutores);
+
+                    foreach ($author_ids as $author_id) {
+                        $stmt_autores->bindParam(':book_id', $book_id, PDO::PARAM_INT);
+                        $stmt_autores->bindParam(':author_ids', $author_id, PDO::PARAM_INT);
+                        $exito = $stmt_autores->execute();
+
+
+                        if (!$exito) {
+                            break;
+                        }
+                    }
+                    if ($exito) {
+                        $conProyecto->commit();
+                    } else {
+                        $conProyecto->rollBack();
+                    }
+                }
+            }catch (PDOException $ex){
+                $conProyecto->rollBack();
+                $exito =false;
+                echo"Ocurrió un error al ingresar el libro: ".$ex->getMessage() ;
+
+            }return $exito;
+           
+        }  
         ?>
-
-
-
-
     </div>
 </body>
 
