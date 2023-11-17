@@ -55,7 +55,9 @@
                 $book_author_ids = $_POST["author_ids"];
             }
 
-           
+       
+
+        createBook($title, $isbn,$pdate, $pub_Id, $book_author_ids);
         }
     
     ?>
@@ -180,31 +182,33 @@
                
                 $conProyecto->beginTransaction();
 
-                $ingresar = "INSERT INTO books( title, isbn, pdate, publisher) VALUES( :title, :isbn, :pdate, :publisher)";
+                $ingresar = "INSERT INTO books( title, isbn, published_date, publisher_id) VALUES( :title, :isbn, :pdate, :publisher)";
 
                 $stmt = $conProyecto->prepare($ingresar);
 
-               
-                $stmt->bindParam(':title', $title, PDO::PARAM_STR);
-                $stmt->bindParam(':isbn', $isbn, PDO::PARAM_STR);
-                $stmt->bindParam(':pdate', $pdate, PDO::PARAM_STR);
-                $stmt->bindParam(':publisher', $publisher, PDO::PARAM_STR);
 
-                $exito=$stmt->execute();
+               /*
+                $stmt->bindParam('title', $title, PDO::PARAM_STR);
+                $stmt->bindParam('isbn', $isbn, PDO::PARAM_STR);
+                $stmt->bindParam('pdate', $pdate);
+                $stmt->bindParam('publisher', $publisher, PDO::PARAM_STR);
+*/
+                $exito=$stmt->execute(array("title"=>$title, "isbn"=>$isbn, "pdate"=>$_POST["pdate"], "publisher"=>$publisher));
 
                 $book_id=$conProyecto->lastInsertId();
 
                 if ($exito) {
 
 
-                    $ingresarAutores = "INSERT INTO book_authors(book_id, author_ids) VALUES(:book_id, :author_ids)";
+                    $ingresarAutores = "INSERT INTO book_authors(book_id, author_id) VALUES(:book_id, :author_ids)";
 
                     $stmt_autores = $conProyecto->prepare($ingresarAutores);
 
                     foreach ($author_ids as $author_id) {
-                        $stmt_autores->bindParam(':book_id', $book_id, PDO::PARAM_INT);
-                        $stmt_autores->bindParam(':author_ids', $author_id, PDO::PARAM_INT);
-                        $exito = $stmt_autores->execute();
+
+                        /*$stmt_autores->bindParam('book_id', $book_id);
+                        $stmt_autores->bindParam('author_ids', $author_id);*/
+                        $exito = $stmt_autores->execute(array("book_id"=>$book_id,"author_ids"=>$author_id));
 
 
                         if (!$exito) {
